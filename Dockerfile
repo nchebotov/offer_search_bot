@@ -18,8 +18,10 @@ COPY requirements.txt .
 # Устанавливаем Python зависимости
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем исходный код
-COPY . .
+# Копируем исходный код (исключая .env для безопасности)
+COPY *.py .
+COPY requirements.txt .
+COPY *.md .
 
 # Создаем пользователя для безопасности
 RUN useradd --create-home --shell /bin/bash app \
