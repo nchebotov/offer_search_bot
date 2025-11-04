@@ -24,11 +24,26 @@ class TelegramMonitor:
         - userbot (API_ID + API_HASH) для мониторинга групп
         - bot (BOT_TOKEN) для отправки уведомлений
         """
+        # Определяем директорию для сессий
+        # На хостинге используем /data, локально - ./data
+        if os.name == 'nt':  # Windows
+            data_dir = "./data"
+        else:  # Linux/Unix (хостинг)
+            data_dir = "/data"
+            
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+            print(f"📁 Создана директория для сессий: {data_dir}")
+        
         # Userbot для мониторинга групп (от имени пользователя)
-        self.user_client = TelegramClient(f"{SESSION_NAME}_user", API_ID, API_HASH)
+        user_session_path = os.path.join(data_dir, f"{SESSION_NAME}_user")
+        self.user_client = TelegramClient(user_session_path, API_ID, API_HASH)
         
         # Bot для отправки уведомлений (токен бота)
-        self.bot_client = TelegramClient(f"{SESSION_NAME}_bot", API_ID, API_HASH)
+        bot_session_path = os.path.join(data_dir, f"{SESSION_NAME}_bot")
+        self.bot_client = TelegramClient(bot_session_path, API_ID, API_HASH)
+        
+        self.data_dir = data_dir  # Сохраняем для использования в других методах
         
         self.target_entity = None  # Информация о целевой группе
         self.start_time = None  # Время запуска бота
@@ -53,8 +68,10 @@ class TelegramMonitor:
                 logger.error("❌ Поврежденная база данных сессии. Удаляем и пересоздаем...")
                 # Удаляем поврежденные файлы сессии
                 session_files = [
-                    f"{SESSION_NAME}_user.session", f"{SESSION_NAME}_user.session-journal",
-                    f"{SESSION_NAME}_bot.session", f"{SESSION_NAME}_bot.session-journal"
+                    os.path.join(self.data_dir, f"{SESSION_NAME}_user.session"),
+                    os.path.join(self.data_dir, f"{SESSION_NAME}_user.session-journal"),
+                    os.path.join(self.data_dir, f"{SESSION_NAME}_bot.session"),
+                    os.path.join(self.data_dir, f"{SESSION_NAME}_bot.session-journal")
                 ]
                 for file in session_files:
                     if os.path.exists(file):
@@ -62,8 +79,10 @@ class TelegramMonitor:
                         logger.info(f"🗑️ Удален файл: {file}")
                 
                 # Пересоздаем клиенты и запускаем заново
-                self.user_client = TelegramClient(f"{SESSION_NAME}_user", API_ID, API_HASH)
-                self.bot_client = TelegramClient(f"{SESSION_NAME}_bot", API_ID, API_HASH)
+                user_session_path = os.path.join(self.data_dir, f"{SESSION_NAME}_user")
+                bot_session_path = os.path.join(self.data_dir, f"{SESSION_NAME}_bot")
+                self.user_client = TelegramClient(user_session_path, API_ID, API_HASH)
+                self.bot_client = TelegramClient(bot_session_path, API_ID, API_HASH)
                 
                 await self.user_client.start()
                 await asyncio.sleep(random.uniform(1, 3))

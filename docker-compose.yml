@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  offer-search-bot:
+    build: .
+    container_name: offer-search-bot
+    restart: unless-stopped
+    
+    # Переменные окружения
+    environment:
+      - API_ID=${API_ID}
+      - API_HASH=${API_HASH}
+      - BOT_TOKEN=${BOT_TOKEN}
+      - TARGET_GROUP=${TARGET_GROUP}
+      - SESSION_NAME=${SESSION_NAME:-offer_search_bot}
+      - GROUPS_TO_MONITOR=${GROUPS_TO_MONITOR:-}
+      - KEYWORDS=${KEYWORDS:-}
+    
+    # Постоянное хранилище для сессий
+    volumes:
+      - bot_data:/data
+    
+    # Логи
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  bot_data:
+    driver: local

@@ -212,3 +212,6 @@ __marimo__/
 *.session-journal
 logs/
 *.db
+
+# Data directory with persistent storage
+/data/

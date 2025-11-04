@@ -224,6 +224,9 @@ offer_search_bot/
 ├── requirements.txt    # Зависимости
 ├── .env.example       # Пример переменных окружения
 ├── .env               # Ваши переменные окружения (создать)
+├── Dockerfile          # Docker образ
+├── docker-compose.yml  # Docker Compose конфигурация
+├── .dockerignore      # Исключения для Docker
 ├── README.md          # Документация
 └── QUICKSTART.md      # Быстрый старт
 ```
