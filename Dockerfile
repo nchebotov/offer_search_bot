@@ -5,7 +5,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Создаем директорию для постоянного хранилища
-RUN mkdir -p /data
+RUN mkdir -p /data && chmod 777 /data
 
 # Устанавливаем системные зависимости
 RUN apt-get update && apt-get install -y \
