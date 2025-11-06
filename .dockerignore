@@ -52,7 +52,6 @@ Thumbs.db
 # Project specific
 *.session
 *.session-journal
-/data/
 logs/
 
 # Documentation
