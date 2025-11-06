@@ -93,7 +93,7 @@ TARGET_GROUP=@your_target_group
 SESSION_NAME=offer_search_bot
 
 # Группы для мониторинга (через запятую, опционально)
-GROUPS_TO_MONITOR=t.me/eventori,t.me/bigfingerchat,t.me/meropriyatiyachat
+GROUPS_TO_MONITOR=t.me/tg_group,...
 
 # Ключевые слова (через запятую, опционально)
 KEYWORDS=пианист,гитарист,скрипач,вокалист,музыкант,оркестр,концерт
@@ -198,7 +198,7 @@ python bot.py
 - Python 3.7+
 - Telegram API credentials
 - Bot token от @BotFather
-- Бот должен быть добавлен в целевую группу и группы для мониторинга
+- User Бот должен быть добавлен в группы для мониторинга
 
 ## Устранение неполадок
 
@@ -237,7 +237,3 @@ offer_search_bot/
 - Используйте переменные окружения на продакшене
 - Регулярно обновляйте зависимости
 - Бот работает только с публичными сообщениями в группах
-
-## Лицензия
-
-MIT License
