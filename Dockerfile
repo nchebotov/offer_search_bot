@@ -26,7 +26,8 @@ COPY *.md .
 # Создаем пользователя для безопасности
 RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app \
-    && chown -R app:app /data
+    && chown -R app:app /data \
+    && chmod -R 755 /data
 
 # Переключаемся на пользователя app
 USER app
