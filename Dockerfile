@@ -4,9 +4,6 @@ FROM python:3.11-slim
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Создаем директорию для постоянного хранилища
-RUN mkdir -p /data && chmod 777 /data
-
 # Устанавливаем системные зависимости
 RUN apt-get update && apt-get install -y \
     gcc \
@@ -27,7 +24,7 @@ COPY *.md .
 RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app \
     && chown -R app:app /data \
-    && chmod -R 755 /data
+    && chmod -R 775 /data
 
 # Переключаемся на пользователя app
 USER app
@@ -40,4 +37,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 # Команда запуска
-CMD ["python", "run.py"]
+CMD ["sh", "-c", "chmod -R 775 /data && chown -R app:app /data && python run.py"]
