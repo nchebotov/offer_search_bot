@@ -22,6 +22,7 @@ COPY *.md .
 
 # Создаем пользователя для безопасности
 RUN useradd --create-home --shell /bin/bash app \
+    && mkdir -p /data \
     && chown -R app:app /app \
     && chown -R app:app /data \
     && chmod -R 775 /data
@@ -37,4 +38,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 # Команда запуска
-CMD ["sh", "-c", "chmod -R 775 /data && chown -R app:app /data && python run.py"]
+CMD ["python", "run.py"]
