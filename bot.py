@@ -7,12 +7,12 @@ from telethon import TelegramClient, events
 import sqlite3
 import os
 
-from config import API_ID, API_HASH, BOT_TOKEN, TARGET_GROUP, SESSION_NAME, GROUPS_TO_MONITOR, KEYWORDS
+from config import API_ID, API_HASH, BOT_TOKEN, TARGET_GROUP, SESSION_NAME, GROUPS_TO_MONITOR, KEYWORDS, LOG_LEVEL
 
 # Настройка логирования
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s'
+    level=int(LOG_LEVEL),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
@@ -41,8 +41,8 @@ class TelegramMonitor:
         
         self.target_entity = None  # Информация о целевой группе
         self.start_time = None  # Время запуска бота
-        self.groups_entities = {}  # Кэш информации о группах
-        self.monitored_chats = []  # Список ID чатов для мониторинга
+        self.groups_entities = {}
+        self.monitored_chats = []
         
     async def init(self):
         """Инициализация и запуск системы"""
@@ -96,8 +96,7 @@ class TelegramMonitor:
         # Получаем информацию о боте
         bot_me = await self.bot_client.get_me()
         print(f"🤖 Bot: {bot_me.first_name} (@{bot_me.username})")
-        
-        # Задержка для безопасности
+
         await asyncio.sleep(random.uniform(2, 5))
         
         # Получаем информацию о целевой группе
