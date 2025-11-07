@@ -13,6 +13,18 @@ from config import API_ID, API_HASH, BOT_TOKEN, TARGET_GROUP, SESSION_NAME, GROU
 
 morph = MorphAnalyzer()
 
+
+NORMALIZED_KEYWORDS = {}
+for kw in KEYWORDS:
+    base = kw.replace('-', ' ')
+    core = base.split()[0]
+    try:
+        lemma = morph.parse(core)[0].normal_form
+    except:
+        lemma = core
+    NORMALIZED_KEYWORDS[kw] = lemma.lower()
+
+
 # Настройка логирования
 logging.basicConfig(
     level=LOG_LEVEL,
@@ -205,66 +217,40 @@ class TelegramMonitor:
             logger.error(f"Ошибка преобразования URL")
             return None
 
-    def expand_keyword(self, keyword):
-        forms = set()
-        keyword = keyword.lower()
-        forms.add(keyword)  # точное совпадение
-
-        # Добавим типичные окончания (для русских слов)
-        endings = ['', 'а', 'ы', 'и', 'у', 'е', 'ой', 'ом', 'я', 'ей', 'ь', 'ка', 'ки', 'ку', 'кой',
-                   'цы', 'ц', 'ца', 'ец', 'ок', 'ик', 'ист', 'истка', 'истки', 'щик', 'щица']
-
-        for end in endings:
-            form = keyword + end
-            # Ограничим длину (чтобы 'альт' + 'руист' не прошло)
-            if len(form) <= len(keyword) + 5:
-                forms.add(form)
-        return forms
-
-
-    def find_keywords(self, text):
-        ALLOWED_WORDS = set()
-        for kw in KEYWORDS:
-            ALLOWED_WORDS.update(self.expand_keyword(kw))
-
-        # Преобразуем в нижний регистр
-        ALLOWED_WORDS = {w.lower() for w in ALLOWED_WORDS}
-
+    def find_keywords(self, text: str):
         if not text:
             return []
 
-        # Очистка текста: оставляем только буквы, дефисы внутри слов, пробелы
-        text_clean = re.sub(r'[^а-яёa-z0-9\s\-]', ' ', text.lower())
-        text_clean = re.sub(r'\s+', ' ', text_clean).strip()
+        clean_text = re.sub(r'[^а-яёa-z0-9\s\-]', ' ', text.lower())
+        clean_text = re.sub(r'-', ' ', clean_text)
+        clean_text = re.sub(r'\s+', ' ', clean_text).strip()
 
-        words = text_clean.split()
-        matched = set()
+        words = clean_text.split()
+        matched_keywords = set()
 
         for word in words:
-            word = word.strip('-')
             if len(word) < 2:
                 continue
 
-            if word in ALLOWED_WORDS:
-                for kw in KEYWORDS:
-                    if word.startswith(kw.lower()):
-                        matched.add(kw)
-                        break
-                continue
-
+            # Шаг 2: Лемматизируем слово
             try:
                 parses = morph.parse(word)
-                if parses:
-                    lemma = parses[0].normal_form
-                    if lemma in ALLOWED_WORDS:
-                        for kw in KEYWORDS:
-                            if lemma.startswith(kw.lower()):
-                                matched.add(kw)
-                                break
+                if not parses:
+                    continue
+                lemma = parses[0].normal_form.lower()
             except Exception:
-                pass
+                lemma = word
 
-        return sorted(matched)
+            for kw, kw_lemma in NORMALIZED_KEYWORDS.items():
+                if lemma.startswith(kw_lemma) or kw_lemma.startswith(lemma):
+
+                    min_len = min(len(lemma), len(kw_lemma))
+                    common = len(kw_lemma) if lemma.startswith(kw_lemma) else len(lemma)
+                    if common / min_len >= 0.7:
+                        matched_keywords.add(kw)
+                        break
+
+        return sorted(matched_keywords)
 
         
     def extract_telegram_username(self, text):
