@@ -125,7 +125,6 @@ class TelegramMonitor:
                 entity = await self.url_to_entity(group_url)
                 if entity:
                     self.groups_entities[group_url] = entity
-                    print(entity)
                     self.monitored_chats.append(entity.id)
                 else:
                     print('Ошбика преобразования URL в entity через userbot')
@@ -199,7 +198,6 @@ class TelegramMonitor:
             else:
                 # Обычная группа/канал
                 username = url.split('/')[0]
-                print(username)
                 return await self.user_client.get_entity(username)
                 
         except Exception as e:
