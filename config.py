@@ -17,7 +17,7 @@ API_HASH = os.getenv('API_HASH', '')
 BOT_TOKEN = os.getenv('BOT_TOKEN', '')
 
 # Целевая группа для уведомлений
-TARGET_GROUP = os.getenv('TARGET_GROUP', '@your_target_group')
+TARGET_GROUP = int(os.getenv('TARGET_GROUP', -100))
 
 # Session name
 SESSION_NAME = os.getenv('SESSION_NAME', 'offer_search_bot')
