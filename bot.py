@@ -12,7 +12,7 @@ from config import API_ID, API_HASH, BOT_TOKEN, TARGET_GROUP, SESSION_NAME, GROU
 # Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s'
 )
 logger = logging.getLogger(__name__)
 
