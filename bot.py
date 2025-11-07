@@ -98,8 +98,8 @@ class TelegramMonitor:
         # Получаем информацию о целевой группе
         try:
             self.target_entity = await self.bot_client.get_entity(TARGET_GROUP)
-            group_name = getattr(self.target_entity, 'title', TARGET_GROUP)
-            print(f"✅ Уведомления будут отправляться группу")
+            # group_name = getattr(self.target_entity, 'title', TARGET_GROUP)
+            print(f"✅ Уведомления будут отправляться в группу")
         except Exception as e:
             print(f"❌ Ошибка получения целевой группы")
             print("⚠️  Убедитесь, что бот добавлен в целевую группу")
@@ -125,10 +125,10 @@ class TelegramMonitor:
                 entity = await self.url_to_entity(group_url)
                 if entity:
                     self.groups_entities[group_url] = entity
+                    print(entity)
                     self.monitored_chats.append(entity.id)
-                    group_name = getattr(entity, 'title', group_url)
                 else:
-                    ...
+                    print('Ошбика преобразования URL в entity через userbot')
                     
             except Exception as _:
                 print(f"❌ Ошибка при получении группы")
@@ -157,7 +157,7 @@ class TelegramMonitor:
                 event_time = event.date
                 if event_time.tzinfo is None:
                     event_time = event_time.replace(tzinfo=timezone.utc)
-                
+
                 if event_time < self.start_time:
                     return
                     
@@ -166,7 +166,7 @@ class TelegramMonitor:
                 if keywords:
                     # Получаем информацию о группе
                     chat = await event.get_chat()
-                    logger.info(f"🎯 Найдено сообщение с ключевыми словами")
+                    logger.info(f"🎯 Найдено сообщение с ключевыми словами  🔥🔥🔥")
                     
                     # Задержка перед обработкой
                     await asyncio.sleep(random.uniform(1, 3))
@@ -199,11 +199,13 @@ class TelegramMonitor:
             else:
                 # Обычная группа/канал
                 username = url.split('/')[0]
+                print(username)
                 return await self.user_client.get_entity(username)
                 
         except Exception as e:
             logger.error(f"Ошибка преобразования URL")
             return None
+
 
     def expand_keyword(self, keyword):
         forms = set()
@@ -264,6 +266,22 @@ class TelegramMonitor:
 
         return sorted(matched)
 
+    # def find_keywords(self, text):
+    #     """
+    #     Поиск ключевых слов в тексте сообщения.
+    #     Возвращает список найденных ключевых слов.
+    #     """
+    #     if not text:
+    #         return []
+    #
+    #     text_lower = text.lower()
+    #     found_keywords = []
+    #
+    #     for keyword in KEYWORDS:
+    #         if keyword.lower() in text_lower:
+    #             found_keywords.append(keyword)
+    #
+    #     return found_keywords
         
     def extract_telegram_username(self, text):
         """Извлекает Telegram username из текста"""
@@ -357,7 +375,7 @@ class TelegramMonitor:
                 )
                 logger.info(f"✅ Отправлено уведомление о сообщении")
             else:
-                logger.warning("⚠️ Целевая группа не настроена")
+                logger.warning("⚠️ Целевая группа не настроена либо недостаточно прав")
                 
         except Exception as e:
             logger.error(f"❌ Ошибка при обработке найденного сообщения: {e}")
@@ -401,7 +419,8 @@ class TelegramMonitor:
                     clean_id = chat_id[4:]
                     return f"[Перейти к сообщению](https://t.me/c/{clean_id}/{message_id})"
                 else:
-                    return "[Ссылка недоступна для приватной группы]()"
+                    print("[Ссылка недоступна для приватной группы]")
+                    return "[Ссылка недоступна для приватной группы]"
                     
         except Exception as e:
             logger.error(f"Ошибка создания ссылки на сообщение")
