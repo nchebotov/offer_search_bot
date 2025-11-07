@@ -263,23 +263,6 @@ class TelegramMonitor:
                 pass
 
         return sorted(matched)
-
-    # def find_keywords(self, text):
-    #     """
-    #     Поиск ключевых слов в тексте сообщения.
-    #     Возвращает список найденных ключевых слов.
-    #     """
-    #     if not text:
-    #         return []
-    #
-    #     text_lower = text.lower()
-    #     found_keywords = []
-    #
-    #     for keyword in KEYWORDS:
-    #         if keyword.lower() in text_lower:
-    #             found_keywords.append(keyword)
-    #
-    #     return found_keywords
         
     def extract_telegram_username(self, text):
         """Извлекает Telegram username из текста"""
