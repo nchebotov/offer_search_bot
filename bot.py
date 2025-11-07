@@ -1,9 +1,8 @@
-
 import asyncio
 import re
 import logging
 import random
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from telethon import TelegramClient, events
 import sqlite3
 import os
@@ -19,11 +18,6 @@ logger = logging.getLogger(__name__)
 
 class TelegramMonitor:
     def __init__(self):
-        """
-        Гибридная архитектура:
-        - userbot (API_ID + API_HASH) для мониторинга групп
-        - bot (BOT_TOKEN) для отправки уведомлений
-        """
         # Определяем директорию для сессий
         # На хостинге используем /data, локально - ./data
         if os.name == 'nt':  # Windows
@@ -110,9 +104,9 @@ class TelegramMonitor:
         try:
             self.target_entity = await self.bot_client.get_entity(TARGET_GROUP)
             group_name = getattr(self.target_entity, 'title', TARGET_GROUP)
-            print(f"✅ Уведомления будут отправляться в: {group_name}")
+            print(f"✅ Уведомления будут отправляться группу")
         except Exception as e:
-            print(f"❌ Ошибка получения целевой группы {TARGET_GROUP}: {e}")
+            print(f"❌ Ошибка получения целевой группы")
             print("⚠️  Убедитесь, что бот добавлен в целевую группу")
             
         # Получаем информацию о группах для мониторинга
@@ -123,7 +117,7 @@ class TelegramMonitor:
 
     async def get_groups_info(self):
         """Получает информацию о группах для мониторинга через userbot"""
-        print(f"📋 Настройка мониторинга {len(GROUPS_TO_MONITOR)} групп...")
+        print(f"📋 Настройка мониторинга групп...")
         
         for i, group_url in enumerate(GROUPS_TO_MONITOR):
             try:
@@ -138,12 +132,11 @@ class TelegramMonitor:
                     self.groups_entities[group_url] = entity
                     self.monitored_chats.append(entity.id)
                     group_name = getattr(entity, 'title', group_url)
-                    print(f"✅ Добавлена группа: {group_name}")
                 else:
-                    print(f"❌ Не удалось получить группу: {group_url}")
+                    ...
                     
-            except Exception as e:
-                print(f"❌ Ошибка при получении группы {group_url}: {e}")
+            except Exception as _:
+                print(f"❌ Ошибка при получении группы")
                 
         print(f"📊 Успешно настроено {len(self.groups_entities)} групп из {len(GROUPS_TO_MONITOR)}")
         
@@ -178,7 +171,7 @@ class TelegramMonitor:
                 if keywords:
                     # Получаем информацию о группе
                     chat = await event.get_chat()
-                    logger.info(f"🎯 Найдено сообщение с ключевыми словами в {chat.title}: {keywords[:3]}")
+                    logger.info(f"🎯 Найдено сообщение с ключевыми словами")
                     
                     # Задержка перед обработкой
                     await asyncio.sleep(random.uniform(1, 3))
@@ -186,7 +179,7 @@ class TelegramMonitor:
                     await self.process_found_message(event, chat)
                     
             except Exception as e:
-                logger.error(f"❌ Ошибка в обработчике сообщений: {e}")
+                logger.error(f"❌ Ошибка в обработчике сообщений")
         
         print("✅ Обработчики событий настроены")
         
@@ -214,7 +207,7 @@ class TelegramMonitor:
                 return await self.user_client.get_entity(username)
                 
         except Exception as e:
-            logger.error(f"Ошибка преобразования URL {url}: {e}")
+            logger.error(f"Ошибка преобразования URL")
             return None
         
     def find_keywords(self, text):
@@ -266,7 +259,7 @@ class TelegramMonitor:
                 return f"[Написать автору](tg://user?id={user_id})"
                 
         except Exception as e:
-            logger.error(f"Ошибка создания кнопки контакта: {e}")
+            logger.error(f"Ошибка создания кнопки контакта")
             return "[Связаться с автором]()"
             
     async def process_found_message(self, event, group_entity):
@@ -308,7 +301,7 @@ class TelegramMonitor:
                 f"👤 **Автор:** {author_info}\n"
                 f"💬 **Группа:** {group_link}\n"
                 f"🔍 **Ключевые слова:** {keywords_text}\n"
-                f"📅 **Время:** {event.date.strftime('%d.%m.%Y %H:%M')}\n\n"
+                f"📅 **Время:** {(event.date + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')}\n\n"
                 f"**Сообщение:**\n{event.text}\n\n"
                 f"🔗 {message_link}\n"
                 f"👆 {contact_button}"
@@ -324,8 +317,7 @@ class TelegramMonitor:
                     notification_text,
                     parse_mode='markdown'
                 )
-                
-                logger.info(f"✅ Отправлено уведомление о сообщении от {author_info} в {group_name}")
+                logger.info(f"✅ Отправлено уведомление о сообщении")
             else:
                 logger.warning("⚠️ Целевая группа не настроена")
                 
@@ -352,7 +344,7 @@ class TelegramMonitor:
                     return f"{group_name}"
                     
         except Exception as e:
-            logger.error(f"Ошибка создания ссылки на группу: {e}")
+            logger.error(f"Ошибка создания ссылки на группу")
             return getattr(group_entity, 'title', 'Группа')
             
     async def create_message_link(self, event, group_entity):
@@ -374,7 +366,7 @@ class TelegramMonitor:
                     return "[Ссылка недоступна для приватной группы]()"
                     
         except Exception as e:
-            logger.error(f"Ошибка создания ссылки на сообщение: {e}")
+            logger.error(f"Ошибка создания ссылки на сообщение")
             return "[Ссылка на сообщение недоступна]()"
             
     async def run(self):
@@ -396,7 +388,7 @@ class TelegramMonitor:
         except KeyboardInterrupt:
             logger.info("⏹️ Получен сигнал остановки")
         except Exception as e:
-            logger.error(f"❌ Критическая ошибка: {e}")
+            logger.error(f"❌ Критическая ошибка")
         finally:
             await self.user_client.disconnect()
             await self.bot_client.disconnect()
