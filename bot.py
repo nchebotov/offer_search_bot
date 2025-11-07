@@ -6,8 +6,12 @@ from datetime import datetime, timezone, timedelta
 from telethon import TelegramClient, events
 import sqlite3
 import os
+from pymorphy3 import MorphAnalyzer
 
 from config import API_ID, API_HASH, BOT_TOKEN, TARGET_GROUP, SESSION_NAME, GROUPS_TO_MONITOR, KEYWORDS, LOG_LEVEL
+
+
+morph = MorphAnalyzer()
 
 # Настройка логирования
 logging.basicConfig(
@@ -200,23 +204,68 @@ class TelegramMonitor:
         except Exception as e:
             logger.error(f"Ошибка преобразования URL")
             return None
-        
+
+    def expand_keyword(self, keyword):
+        forms = set()
+        keyword = keyword.lower()
+        forms.add(keyword)  # точное совпадение
+
+        # Добавим типичные окончания (для русских слов)
+        endings = ['', 'а', 'ы', 'и', 'у', 'е', 'ой', 'ом', 'я', 'ей', 'ь', 'ка', 'ки', 'ку', 'кой',
+                   'цы', 'ц', 'ца', 'ец', 'ок', 'ик', 'ист', 'истка', 'истки', 'щик', 'щица']
+
+        for end in endings:
+            form = keyword + end
+            # Ограничим длину (чтобы 'альт' + 'руист' не прошло)
+            if len(form) <= len(keyword) + 5:
+                forms.add(form)
+        return forms
+
+
     def find_keywords(self, text):
-        """
-        Поиск ключевых слов в тексте сообщения.
-        Возвращает список найденных ключевых слов.
-        """
+        ALLOWED_WORDS = set()
+        for kw in KEYWORDS:
+            ALLOWED_WORDS.update(self.expand_keyword(kw))
+
+        # Преобразуем в нижний регистр
+        ALLOWED_WORDS = {w.lower() for w in ALLOWED_WORDS}
+
         if not text:
             return []
-            
-        text_lower = text.lower()
-        found_keywords = []
-        
-        for keyword in KEYWORDS:
-            if keyword.lower() in text_lower:
-                found_keywords.append(keyword)
-                
-        return found_keywords
+
+        # Очистка текста: оставляем только буквы, дефисы внутри слов, пробелы
+        text_clean = re.sub(r'[^а-яёa-z0-9\s\-]', ' ', text.lower())
+        text_clean = re.sub(r'\s+', ' ', text_clean).strip()
+
+        words = text_clean.split()
+        matched = set()
+
+        for word in words:
+            word = word.strip('-')
+            if len(word) < 2:
+                continue
+
+            if word in ALLOWED_WORDS:
+                for kw in KEYWORDS:
+                    if word.startswith(kw.lower()):
+                        matched.add(kw)
+                        break
+                continue
+
+            try:
+                parses = morph.parse(word)
+                if parses:
+                    lemma = parses[0].normal_form
+                    if lemma in ALLOWED_WORDS:
+                        for kw in KEYWORDS:
+                            if lemma.startswith(kw.lower()):
+                                matched.add(kw)
+                                break
+            except Exception:
+                pass
+
+        return sorted(matched)
+
         
     def extract_telegram_username(self, text):
         """Извлекает Telegram username из текста"""
