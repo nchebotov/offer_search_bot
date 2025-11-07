@@ -11,7 +11,7 @@ from config import API_ID, API_HASH, BOT_TOKEN, TARGET_GROUP, SESSION_NAME, GROU
 
 # Настройка логирования
 logging.basicConfig(
-    level=int(LOG_LEVEL),
+    level=LOG_LEVEL,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)

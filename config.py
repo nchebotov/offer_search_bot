@@ -22,6 +22,8 @@ TARGET_GROUP = os.getenv('TARGET_GROUP', '@your_target_group')
 # Session name
 SESSION_NAME = os.getenv('SESSION_NAME', 'offer_search_bot')
 
+LOG_LEVEL = int(os.getenv('LOG_LEVEL', 0))
+
 
 # Группы для мониторинга (через переменные окружения)
 def get_groups_from_env():
