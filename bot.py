@@ -93,7 +93,7 @@ class TelegramMonitor:
         
         # Получаем информацию о целевой группе
         try:
-            self.target_entity = await self.user_client.get_entity(TARGET_GROUP)
+            self.target_entity = await self.bot_client.get_entity(TARGET_GROUP)
             group_name = getattr(self.target_entity, 'title', TARGET_GROUP)
             print(f"✅ Уведомления будут отправляться группу")
         except Exception as e:
@@ -303,7 +303,7 @@ class TelegramMonitor:
             
             # Отправляем уведомление через bot
             if self.target_entity:
-                await self.user_client.send_message(
+                await self.bot_client.send_message(
                     self.target_entity,
                     notification_text,
                     parse_mode='markdown'
