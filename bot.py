@@ -208,15 +208,13 @@ class TelegramMonitor:
     def expand_keyword(self, keyword):
         forms = set()
         keyword = keyword.lower()
-        forms.add(keyword)  # точное совпадение
+        forms.add(keyword)
 
-        # Добавим типичные окончания (для русских слов)
         endings = ['', 'а', 'ы', 'и', 'у', 'е', 'ой', 'ом', 'я', 'ей', 'ь', 'ка', 'ки', 'ку', 'кой',
                    'цы', 'ц', 'ца', 'ец', 'ок', 'ик', 'ист', 'истка', 'истки', 'щик', 'щица']
 
         for end in endings:
             form = keyword + end
-            # Ограничим длину (чтобы 'альт' + 'руист' не прошло)
             if len(form) <= len(keyword) + 5:
                 forms.add(form)
         return forms
