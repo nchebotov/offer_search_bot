@@ -187,9 +187,9 @@ class TelegramMonitor:
                 url = url[13:]
                 
             # Обрабатываем разные типы ссылок
-            # if url.startswith('+'):
+            if url.startswith('+'):
                 # Инвайт-ссылка
-                # return await self.user_client.get_entity(url)
+                return await self.user_client.get_entity(url)
             if 'c/' in url:
                 # Приватная группа
                 parts = url.split('c/')[1].split('/')
@@ -200,7 +200,7 @@ class TelegramMonitor:
                 username = url.split('/')[0]
                 return await self.user_client.get_entity(username)
                 
-        except Exception as e:
+        except Exception as _:
             logger.error(f"Ошибка преобразования URL")
             return None
 
