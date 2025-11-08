@@ -187,12 +187,12 @@ class TelegramMonitor:
                 url = url[13:]
                 
             # Обрабатываем разные типы ссылок
-            if url.startswith('+'):
+            # if url.startswith('+'):
                 # Инвайт-ссылка
-                return await self.user_client.get_entity(url)
-            elif '/c/' in url:
+                # return await self.user_client.get_entity(url)
+            if 'c/' in url:
                 # Приватная группа
-                parts = url.split('/c/')[1].split('/')
+                parts = url.split('c/')[1].split('/')
                 chat_id = int(parts[0])
                 return await self.user_client.get_entity(f"-100{chat_id}")
             else:
@@ -210,8 +210,10 @@ class TelegramMonitor:
         keyword = keyword.lower()
         forms.add(keyword)
 
-        endings = ['', 'а', 'ы', 'и', 'у', 'е', 'ой', 'ом', 'я', 'ей', 'ых', 'ый', 'ь', 'ка', 'ки', 'ку', 'кой',
-                   'цы', 'ц', 'ца', 'ец', 'ок', 'ик', 'ист', 'истка', 'истки', 'щик', 'щица', 'ант', 'антка']
+        endings = [
+            '', 'а', 'ы', 'и', 'у', 'е', 'ой', 'ом', 'я', 'ей', 'ых', 'ый', 'ь', 'ка', 'ки', 'ку', 'кой',
+            'цы', 'ц', 'ца', 'ец', 'ок', 'ик', 'ист', 'истка', 'истки', 'щик', 'щица', 'нщик', 'нщица', 'ант', 'антка'
+        ]
 
         for end in endings:
             form = keyword + end
@@ -380,7 +382,7 @@ class TelegramMonitor:
                     # Обычная группа
                     return f"{group_name}"
                     
-        except Exception as e:
+        except Exception as _:
             logger.error(f"Ошибка создания ссылки на группу")
             return getattr(group_entity, 'title', 'Группа')
             
