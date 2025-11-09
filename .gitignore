@@ -215,3 +215,5 @@ logs/
 
 # Data directory with persistent storage
 /data/
+
+debug_groups.py
