@@ -93,7 +93,7 @@ class TelegramMonitor:
         
         print(f"✅ Система запущена в {self.start_time.strftime('%d.%m.%Y %H:%M')}")
 
-        await asyncio.sleep(random.uniform(2, 5))
+        await asyncio.sleep(random.uniform(1, 3))
         
         # Получаем информацию о целевой группе
         try:
@@ -146,7 +146,7 @@ class TelegramMonitor:
             """Обработчик новых сообщений"""
             try:
                 # Небольшая случайная задержка для имитации человеческого поведения
-                await asyncio.sleep(random.uniform(1.5, 5))
+                await asyncio.sleep(random.uniform(0.5, 2))
                 
                 # Пропускаем сообщения без текста
                 if not event.text:
@@ -172,7 +172,7 @@ class TelegramMonitor:
                     
                     await self.process_found_message(event, chat)
                     
-            except Exception as e:
+            except Exception as _:
                 logger.error(f"❌ Ошибка в обработчике сообщений")
         
         print("✅ Обработчики событий настроены")
@@ -212,7 +212,8 @@ class TelegramMonitor:
 
         endings = [
             '', 'а', 'ы', 'и', 'у', 'е', 'ой', 'ом', 'я', 'ей', 'ых', 'ый', 'ь', 'ка', 'ки', 'ку', 'кой',
-            'цы', 'ц', 'ца', 'ец', 'ок', 'ик', 'ист', 'истка', 'истки', 'щик', 'щица', 'нщик', 'нщица', 'ант', 'антка'
+            'цы', 'ц', 'ца', 'ец', 'ок', 'ик', 'ист', 'истка', 'истки', 'щик', 'щица', 'нщик', 'нщица', 'ант', 'антка',
+            'льную', 'льная', 'льный'
         ]
 
         for end in endings:
@@ -325,7 +326,7 @@ class TelegramMonitor:
             
             # Найденные ключевые слова
             keywords = self.find_keywords(event.text)
-            keywords_text = ", ".join(keywords[:5])  # Показываем первые 5 ключевых слов
+            keywords_text = ", ".join(keywords)
             
             # Создаем кнопку для связи с автором
             contact_button = await self.create_contact_button_from_event(event, sender)
