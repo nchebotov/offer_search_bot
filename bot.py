@@ -2,7 +2,6 @@ import asyncio
 import re
 import logging
 import random
-import json
 from datetime import datetime, timezone, timedelta
 from telethon import TelegramClient, events
 import sqlite3
@@ -49,57 +48,7 @@ class TelegramMonitor:
         self.groups_entities = {}
         self.monitored_chats = []
         
-        # Файл для сохранения времени последних сообщений
-        self.last_messages_file = os.path.join(data_dir, "last_messages.json")
-        self.last_message_times = {}  # chat_id -> timestamp
         
-    def load_last_message_times(self):
-        """Загружает времена последних сообщений из файла"""
-        try:
-            if os.path.exists(self.last_messages_file):
-                with open(self.last_messages_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    # Конвертируем строковые ключи обратно в int
-                    self.last_message_times = {int(k): datetime.fromisoformat(v) for k, v in data.items()}
-                logger.info(f"📥 Загружены времена последних сообщений для {len(self.last_message_times)} чатов")
-        except Exception as e:
-            logger.warning(f"⚠️ Не удалось загрузить времена последних сообщений: {type(e).__name__}")
-            self.last_message_times = {}
-    
-    def save_last_message_times(self):
-        """Сохраняет времена последних сообщений в файл"""
-        try:
-            # Конвертируем int ключи в строки и datetime в ISO формат
-            data = {str(k): v.isoformat() for k, v in self.last_message_times.items()}
-            with open(self.last_messages_file, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            logger.warning(f"⚠️ Не удалось сохранить времена последних сообщений: {type(e).__name__}")
-    
-    def update_last_message_time(self, chat_id, message_time):
-        """Обновляет время последнего сообщения для чата"""
-        if message_time.tzinfo is None:
-            message_time = message_time.replace(tzinfo=timezone.utc)
-        
-        # Обновляем только если новое сообщение более свежее
-        if chat_id not in self.last_message_times or message_time > self.last_message_times[chat_id]:
-            self.last_message_times[chat_id] = message_time
-            # Сохраняем периодически (каждые 10 обновлений)
-            if len(self.last_message_times) % 10 == 0:
-                self.save_last_message_times()
-    
-    def should_process_message(self, chat_id, message_time):
-        """Определяет, нужно ли обрабатывать сообщение"""
-        if message_time.tzinfo is None:
-            message_time = message_time.replace(tzinfo=timezone.utc)
-        
-        # Если есть сохраненное время для этого чата
-        if chat_id in self.last_message_times:
-            return message_time > self.last_message_times[chat_id]
-        
-        # Если нет сохраненного времени, используем время запуска с буфером
-        buffer_time = timedelta(minutes=10)  # 10 минут буфер
-        return message_time > (self.start_time - buffer_time)
         
     async def init(self):
         """Инициализация и запуск системы"""
@@ -107,9 +56,6 @@ class TelegramMonitor:
             # Запускаем userbot (потребует авторизации при первом запуске)
             await self.user_client.start()
             self.start_time = datetime.now(timezone.utc)
-            
-            # Загружаем сохраненные времена последних сообщений
-            self.load_last_message_times()
             
             # Минимальная задержка для безопасности
             await asyncio.sleep(random.uniform(0.5, 1))
@@ -228,14 +174,6 @@ class TelegramMonitor:
                 # Пропускаем сообщения без текста
                 if not event.text:
                     return
-                
-                # Проверяем, нужно ли обрабатывать это сообщение
-                event_time = event.date
-                if not self.should_process_message(event.chat_id, event_time):
-                    return
-                
-                # Обновляем время последнего сообщения для этого чата
-                self.update_last_message_time(event.chat_id, event_time)
                     
                 # Проверяем на ключевые слова
                 keywords = self.find_keywords(event.text)
@@ -243,9 +181,6 @@ class TelegramMonitor:
                     # Получаем информацию о группе
                     chat = await event.get_chat()
                     print(f"🎯 Найдено сообщение с ключевыми словами")
-                    
-                    # Минимальная задержка перед обработкой
-                    await asyncio.sleep(random.uniform(0.1, 0.3))
                     
                     # Передаем уже найденные ключевые слова
                     await self.process_found_message(event, chat, keywords)
@@ -391,9 +326,6 @@ class TelegramMonitor:
             # Получаем отправителя через userbot
             sender = await event.get_sender()
             
-            # Минимальная задержка для безопасности
-            await asyncio.sleep(random.uniform(0.1, 0.3))
-            
             # Формируем информацию об авторе
             author_info = "Неизвестный автор"
             if sender:
@@ -430,9 +362,6 @@ class TelegramMonitor:
                 f"🔗 {message_link}\n"
                 f"👆 {contact_button}"
             )
-            
-            # Минимальная задержка перед отправкой уведомления
-            await asyncio.sleep(random.uniform(0.2, 0.5))
             
             # Отправляем уведомление через bot
             if self.target_entity:
@@ -517,7 +446,7 @@ class TelegramMonitor:
             print("🤖 Bot - отправка уведомлений в целевую группу")
             print(f"📝 Отслеживаем {len(KEYWORDS)} ключевых слов")
             print("📡 Используем события для реального времени")
-            print("🛡️  Добавлены задержки для безопасности")
+            print("⚡ Быстрая обработка без задержек")
             print("⏹️  Нажмите Ctrl+C для остановки")
             
             # Запускаем бесконечный цикл для обработки событий
@@ -529,10 +458,6 @@ class TelegramMonitor:
             error_type = type(e).__name__
             logger.error(f"❌ Критическая ошибка: {error_type}")
         finally:
-            # Сохраняем времена последних сообщений перед завершением
-            self.save_last_message_times()
-            logger.info("💾 Сохранены времена последних сообщений")
-            
             await self.user_client.disconnect()
             await self.bot_client.disconnect()
             logger.info("✅ Система остановлена")
