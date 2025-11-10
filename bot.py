@@ -58,8 +58,8 @@ class TelegramMonitor:
             self.start_time = datetime.now(timezone.utc)
             
             # Минимальная задержка для безопасности
-            await asyncio.sleep(random.uniform(0.5, 1))
-            
+            # await asyncio.sleep(random.uniform(0.5, 1))
+
             # Запускаем bot
             await self.bot_client.start(bot_token=BOT_TOKEN)
             
@@ -85,7 +85,7 @@ class TelegramMonitor:
                 self.bot_client = TelegramClient(bot_session_path, API_ID, API_HASH)
                 
                 await self.user_client.start()
-                await asyncio.sleep(random.uniform(1, 2))
+                # await asyncio.sleep(random.uniform(1, 2))
                 await self.bot_client.start(bot_token=BOT_TOKEN)
                 
                 self.start_time = datetime.now(timezone.utc)
@@ -95,7 +95,7 @@ class TelegramMonitor:
         
         print(f"✅ Система запущена в {self.start_time.strftime('%d.%m.%Y %H:%M')}")
 
-        await asyncio.sleep(random.uniform(0.3, 0.7))
+        # await asyncio.sleep(random.uniform(0.3, 0.7))
         
         # Получаем информацию о целевой группе
         try:
@@ -132,8 +132,9 @@ class TelegramMonitor:
             try:
                 # Минимальная задержка между запросами для безопасности
                 if i > 0:
-                    delay = random.uniform(0.2, 0.5)
-                    await asyncio.sleep(delay)
+                    pass
+                    # delay = random.uniform(0.2, 0.5)
+                    # await asyncio.sleep(delay)
                 
                 # Преобразуем URL в entity через userbot
                 entity = await self.url_to_entity(group_url)
@@ -149,7 +150,7 @@ class TelegramMonitor:
         print(f"📊 Успешно настроено {len(self.groups_entities)} групп из {len(GROUPS_TO_MONITOR)}")
         
         # Минимальная финальная задержка
-        await asyncio.sleep(random.uniform(0.3, 0.7))
+        # await asyncio.sleep(random.uniform(0.3, 0.7))
         
         # Добавляем диагностику состояния мониторинга
         await self.log_monitoring_status()
