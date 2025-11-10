@@ -9,6 +9,7 @@ import os
 from pymorphy3 import MorphAnalyzer
 
 from config import API_ID, API_HASH, BOT_TOKEN, TARGET_GROUP, SESSION_NAME, GROUPS_TO_MONITOR, KEYWORDS, LOG_LEVEL
+from message_time_manager import MessageTimeManager
 
 
 morph = MorphAnalyzer()
@@ -31,7 +32,7 @@ class TelegramMonitor:
             
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
-            print(f"📁 Создана директория для сессий: {data_dir}")
+            print(f"📁 Создана директория для сессий")
         
         # Userbot для мониторинга групп (от имени пользователя)
         user_session_path = os.path.join(data_dir, f"{SESSION_NAME}_user")
@@ -43,10 +44,14 @@ class TelegramMonitor:
         
         self.data_dir = data_dir  # Сохраняем для использования в других методах
         
+        # Инициализируем менеджер времени сообщений
+        self.message_time_manager = MessageTimeManager(data_dir)
+        
         self.target_entity = None  # Информация о целевой группе
         self.start_time = None  # Время запуска бота
         self.groups_entities = {}
         self.monitored_chats = []
+        self.saved_times = {}  # Кэш сохраненных времен
         
         
         
@@ -76,7 +81,7 @@ class TelegramMonitor:
                 for file in session_files:
                     if os.path.exists(file):
                         os.remove(file)
-                        logger.info(f"🗑️ Удален файл: {file}")
+                        logger.info(f"🗑️ Удален файл сессии")
                 
                 # Пересоздаем клиенты и запускаем заново
                 user_session_path = os.path.join(self.data_dir, f"{SESSION_NAME}_user")
@@ -121,6 +126,12 @@ class TelegramMonitor:
         # Получаем информацию о группах для мониторинга
         await self.get_groups_info()
         
+        # Загружаем сохраненные времена
+        await self.load_saved_times()
+        
+        # Обрабатываем исторические сообщения
+        await self.process_historical_messages()
+        
         # Настраиваем обработчик событий
         await self.setup_event_handlers()
 
@@ -142,7 +153,7 @@ class TelegramMonitor:
                     self.groups_entities[group_url] = entity
                     self.monitored_chats.append(entity.id)
                 else:
-                    print('Ошбика преобразования URL в entity через userbot')
+                    print('Ошибка преобразования URL в entity через userbot')
                     
             except Exception as _:
                 print(f"❌ Ошибка при получении группы")
@@ -163,6 +174,73 @@ class TelegramMonitor:
             print(f"🎯 Целевая группа настроена")
         else:
             print(f"❌ Целевая группа НЕ настроена")
+    
+    async def load_saved_times(self):
+        """Загружает сохраненные времена последних сообщений"""
+        print("📥 Загрузка сохраненных времен...")
+        self.saved_times = self.message_time_manager.get_all_last_times()
+        print(f"✅ Загружено {len(self.saved_times)} сохраненных времен")
+    
+    async def process_historical_messages(self):
+        """Обрабатывает исторические сообщения при запуске"""
+        print("🕒 Обработка исторических сообщений...")
+        
+        processed_count = 0
+        found_count = 0
+        
+        for group_url, entity in self.groups_entities.items():
+            try:
+                # Определяем время, с которого начинать поиск
+                if group_url in self.saved_times:
+                    since_time = self.saved_times[group_url][0]
+                    print(f"📅 Группа: поиск с {since_time.strftime('%d.%m.%Y %H:%M')}")
+                else:
+                    since_time = self.message_time_manager.get_fallback_time(10)
+                    print(f"🆕 Новая группа: поиск за последние 10 минут")
+                
+                # Получаем сообщения с указанного времени
+                messages_processed = 0
+                async for message in self.user_client.iter_messages(entity, offset_date=since_time, reverse=True):
+                    if not message.text:
+                        continue
+                    
+                    messages_processed += 1
+                    processed_count += 1
+                    
+                    # Сохраняем время каждого обработанного сообщения
+                    await self.save_message_time(group_url, entity, message)
+                    
+                    # Проверяем на ключевые слова
+                    keywords = self.find_keywords(message.text)
+                    if keywords:
+                        found_count += 1
+                        print(f"🎯 Найдено историческое сообщение с ключевыми словами")
+                        await self.process_found_message(message, entity, keywords)
+                
+                if messages_processed > 0:
+                    print(f"✅ Группа: обработано {messages_processed} сообщений")
+                
+                # Небольшая задержка между группами
+                await asyncio.sleep(0.5)
+                
+            except Exception as e:
+                logger.error(f"❌ Ошибка обработки исторических сообщений для группы: {e}")
+        
+        print(f"📊 Обработка завершена: {processed_count} сообщений, найдено {found_count} с ключевыми словами")
+    
+    async def save_message_time(self, group_url: str, entity, message):
+        """Сохраняет время сообщения в базу данных"""
+        try:
+            group_name = getattr(entity, 'title', 'Неизвестная группа')
+            message_time = message.date
+            if message_time.tzinfo is None:
+                message_time = message_time.replace(tzinfo=timezone.utc)
+            
+            self.message_time_manager.save_last_message_time(
+                group_url, entity.id, group_name, message_time, message.id
+            )
+        except Exception as e:
+            logger.error(f"❌ Ошибка сохранения времени сообщения: {e}")
         
     async def setup_event_handlers(self):
         """Настраивает обработчики событий для мониторинга через userbot"""
@@ -175,12 +253,24 @@ class TelegramMonitor:
                 # Пропускаем сообщения без текста
                 if not event.text:
                     return
-                    
+                
+                # Получаем информацию о группе
+                chat = await event.get_chat()
+                
+                # Находим URL группы для сохранения времени
+                group_url = None
+                for url, entity in self.groups_entities.items():
+                    if entity.id == chat.id:
+                        group_url = url
+                        break
+                
+                # Сохраняем время каждого обработанного сообщения
+                if group_url:
+                    await self.save_message_time(group_url, chat, event)
+                
                 # Проверяем на ключевые слова
                 keywords = self.find_keywords(event.text)
                 if keywords:
-                    # Получаем информацию о группе
-                    chat = await event.get_chat()
                     print(f"🎯 Найдено сообщение с ключевыми словами")
                     
                     # Передаем уже найденные ключевые слова
@@ -221,7 +311,7 @@ class TelegramMonitor:
                 return await self.user_client.get_entity(username)
                 
         except Exception as _:
-            logger.error(f"Ошибка преобразования URL")
+            logger.error(f"Ошибка преобразования URL группы")
             return None
 
 
@@ -448,6 +538,11 @@ class TelegramMonitor:
             print(f"📝 Отслеживаем {len(KEYWORDS)} ключевых слов")
             print("📡 Используем события для реального времени")
             print("⚡ Быстрая обработка без задержек")
+            
+            # Показываем статистику базы данных
+            stats = self.message_time_manager.get_statistics()
+            print(f"💾 База данных: {stats['total_groups']} групп, {stats['active_today']} активных сегодня")
+            
             print("⏹️  Нажмите Ctrl+C для остановки")
             
             # Запускаем бесконечный цикл для обработки событий
